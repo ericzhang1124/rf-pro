@@ -1,0 +1,682 @@
+RF 学习
+
+1.File & Directories
+* Test Libraries: 存放最低级关键字
+* Resources Files: 存放变量和用户关键字
+* Variable Files: 比Resource Files更灵活的创建变量
+
+2.Support File Format # 支持的文件格式
+* HTML
+* TSV
+* Plain text format # 重文本-推荐
+	两个或以上的空格 or 空格包围管道符号
+
+	** 注意空格数据的 处理 
+	管道被空格包围的格式最好
+eg.
+| *Setting*  |     *Value*     |
+| Library    | OperatingSystem |
+
+| *Variable* |     *Value*     |
+| ${MESSAGE} | Hello, world!   |
+
+| *Test Case*  | *Action*        | *Argument*   |
+| My Test      | [Documentation] | Example test |
+|              | Log             | ${MESSAGE}   |
+|              | My Keyword      | /tmp         |
+| Another Test | Should Be Equal | ${MESSAGE}   | Hello, world!
+
+| *Keyword*  |
+| My Keyword | [Arguments] | ${path}
+|            | Directory Should Exist | ${path}
+
+
+	** 从2.7.6版本以后支持 *.robot 的后缀，更容易区分test_data_file和普通纯文本文件(*.txt)
+
+3.four type 
+Settings		1) Importing test libraries, resource files and variable files.	
+				2) Defining metadata for test suites and test cases.
+Variables		Defining variables that can be used elsewhere in the test data.
+Test Cases		Creating test cases from available keywords.
+Keywords		Creating user keywords from existing lower-level keywords
+
+2.2 Create TestCase
+2.2.1 TestCase Syntax
+Basc Syntax
+Test Case的Setting
+	[Documentation]:测试用例的说明文档
+	[Tags]：测试用例的tag
+	[Setup], [Teardown]:本条测试用例特有的上下文
+	[Template]：模板，数据驱动，同一个关键字不同的数据依次的执行
+	[Timeout]：测试用例超时
+	eg.
+*** Test Cases ***
+Test With Settings
+    [Documentation]    Another dummy test
+    [Tags]    dummy    owner-johndoe
+    Log    Hello, world!
+
+Test case related settings in the Setting table # 测试用例相关设置，在 *** Settings *** 下
+	Force Tags, Default Tags
+	The forced and default values for tags.
+	Test Setup, Test Teardown
+	The default values for test setup and teardown.
+	Test Template
+	The default template keyword to use.
+	Test Timeout
+	The default value for test case timeout. Timeouts are discussed in their own section.
+
+2.2.2 Using Arguments
+Mandatory arguments #强制参数	一个不能少，位置不能错
+Default values # 默认值，
+	 Create File | path, content=, encoding=UTF-8 # ‘path’为强制参数， ‘content=’可选参数，无默认值， ‘encoding=UTF-8’可选参数且有默认值
+
+Variable number of arguments
+	*var:可变参数
+
+Named arguments
+	* 对大小写和空格敏感， 空格敏感即不能‘arg = value’，只能 ‘arg=value’
+	* User Keyword 使用时不能带'${}'
+	* named arg 要放到普通参数后边，named arg顺序无所谓
+Named arguments with variables 
+
+***--Named auguments 和 kw arguments --*** 后续再好好学学
+
+2.2.4 Test Case name and documentation
+*** Test Cases ***
+Simple
+    [Documentation]    Simple documentation
+    No Operation
+
+Formatting
+    [Documentation]    *This is bold*, _this is italic_  and here is a link: http://robotframework.org
+    No Operation
+
+Variables
+    [Documentation]    Executed at ${HOST} by ${USER}
+    No Operation
+
+Splitting
+    [Documentation]    This documentation    is split    into multiple columns
+    No Operation
+
+Many lines
+    [Documentation]    Here we have
+    ...                an automatic newline
+    No Operation
+
+2.2.5 Tagging Test Cases
+Force Tags: 写在测试套件的Settings中，套件内的所有test case获得此Tag！ 可以通过Remove Tags 删除
+Default Tags: 写在测试套件的Settings中，套件内的所有test case 如果没有设置自己的Tags就自动获取Default Tags.如果设置了
+...			就不自动获取Default Tags;可以在测试用例的[Tags]设置为None，然后也不会获取到Default Tags了;
+...			Remove Tags 同样可以删除Default Tags		
+Tags: 
+
+2.2.6 Test Set up and Teardown 
+	* 执行在测试套件内的每条testCase前后
+	* 可以通过 [Test Setup    关键字 / Test Setup    Run Keywords     关键字1     关键字2   关键字3...]  执行
+	* Test teardown 在用例执行失败的时候也可以执行，所以可以用于清理任务
+	* Test teardown 内的关键字如果出错，后边的关键字依然会去执行
+	* Test Cases表内的[Setup] [Teardown]会覆盖掉套件内的[Test Setup] & [Test Teardown] | 为None干掉套件的[Test Setup] & [Test Teardown] 
+	* Setup ,Teardown 后的执行关键字支持变量，这个特性有助于执行不同环境的setup & teardown
+
+2.2.7 Test Templates
+	* 将关键字驱动模式 ---> 数据驱动模式
+Basic Usage
+eg.
+*** Test Cases **
+Normal test case
+    Example keyword    first argument    second argument
+
+Templated test case
+    [Template]    Example keyword
+    first argument    second argument
+
+    * 支持在Settings表设置Test Template
+    * Test Template 可以被 [Template]覆盖，使用None可以干掉Test Template
+    * 模板多条测试数据，如果由一条或者多条执行失败，其他的也会自动的继续执行
+
+Templates with embedded arguments
+# pass
+
+Templates with for loops
+eg.
+*** Test Cases ***
+Template and for
+    [Template]    Example keyword
+    :FOR    ${item}    IN    @{ITEMS}
+    \    ${item}    2nd arg
+    :FOR    ${index}    IN RANGE    42
+    \    1st arg    ${index}
+
+2.2.8 Different test case Styles
+Keyword-driven style
+Data-driven style
+	eg.
+	*** Settings ***
+	Test Template    Login with invalid credentials should fail
+
+	*** Test Cases ***                USERNAME         PASSWORD
+	Invalid User Name                 invalid          ${VALID PASSWORD}
+	Invalid Password                  ${VALID USER}    invalid
+	Invalid User Name and Password    invalid          invalid
+	Empty User Name                   ${EMPTY}         ${VALID PASSWORD}
+	Empty Password                    ${VALID USER}    ${EMPTY}
+	Empty User Name and Password      ${EMPTY}         ${EMPTY}
+
+==
+
+	*** Test Cases ***
+	Invalid Password
+	    [Template]    Login with invalid credentials should fail
+	    invalid          ${VALID PASSWORD}
+	    ${VALID USER}    invalid
+	    invalid          whatever
+	    ${EMPTY}         ${VALID PASSWORD}
+	    ${VALID USER}    ${EMPTY}
+	    ${EMPTY}         ${EMPTY}
+
+Behavior-driven style
+pass
+
+2.3 Create Test Suite
+2.3.1 TestCase Files
+Documentation 					Used for specifying a test suite documentation
+Metadata 						Used for setting free test suite metadata as name-value pairs.
+Suite Setup, Suite Teardown 	Specify suite setup and teardown.
+
+2.3.2 Test suite directories
+	* 目录里边可以放suite,suite 里可以放suite / test case
+	目录
+		suite1
+			suite1.1
+			suite1.2
+			...
+		suite2
+		suite3
+		...
+
+	* 执行测试目录
+		* 忽略以“.”,"_"开头的文件
+		* 目录使用CSV命名的忽略
+		* 文件没有可识别后缀的忽略
+
+	* Warning on invalid files
+	pass
+
+	* Initialization files--RF 目录的初始化文件
+		* __init__.robot or __init__.html
+		* 内部不能放testCase, 只支持部分设置
+		* 初始化文件内设置的变量和关键字，在低阶suite内不可识别，如果需要通过Resource导入
+		* 初始化文件内设置什么
+			Documentation, Metadata, Suite Setup, Suite Teardown
+				These test suite specific settings work the same way as in test case files.
+			Force Tags
+				Specified tags are unconditionally set to all test cases in all test case files this directory contains directly or recursively.
+			Test Setup, Test Teardown, Test Timeout
+				Set the default value for test setup/teardown or test timeout to all test cases this directory contains. Can be overridden on lower level. Support for defining test timeout in initialization files was added in Robot Framework 2.7.
+			Default Tags, Test Template
+				Not supported in initialization files.
+
+2.3.3 Test suite name and documentation
+	* 可以在测试用例集前加前缀设置 测试套件 的执行顺序
+		eg.
+		01__some_tests.txt,02__more_tests.txt
+		01在02前执行，且执行是后将“01__”,"02__"删除掉
+2.3.4 Free test suit metadata
+	*** Settings ***
+	Metadata    Version        2.0
+	Metadata    More Info      For more information about *Robot Framework* see http://robotframework.org
+	Metadata    Executed At    ${HOST}
+
+2.3.5 Suite setup and teardown
+	* suite setup 执行失败后边的case就不会被执行了
+	* suite setup 执行失败，suite teardown会执行
+	* suite teardown 中一个或多个关键字执行失败，其他的依然可正常的执行
+	* suite setpu/teardown 后的关键字支持采用变量模式
+
+2.4 Using Test Libraries
+	* 包含最底层的关键字,Libraries 才是和被测对象直接交互的
+2.4.1 Import Libraries
+	* Library 通常是通过在 Settings table内设置的，但是也支持通过 Import Library 关键字实现
+	* Using Library Setting
+	eg.
+		*** Settings ***
+		Library    OperatingSystem
+		Library    my.package.TestLibrary
+		Library    MyLibrary    arg1    arg2
+		Library    ${LIBRARY}		
+	* 可以在test case file,resource file, test suite initialization file都可以导入，
+		尤其在resource file中导入其他文件就都可以使用
+
+	* Using Import Library Keyword
+2.4.2 Specifying(指定) library to import
+	* Using library name
+		* 给定library库名，RF会在模块的搜索路径里查找
+		* 好处是：导入简单，不关心库文件在哪里
+		* 缺点是要自己去配置Path文件
+	* Using physical path to library
+		* 好处是：不用再配置Path文件了
+		* 导入文件要有后缀
+		* 如果python库通过目录实现则需要在目录后增加 “/”
+		eg.
+			*** Settings ***
+			Library    PythonLibrary.py # 导入python 文件
+			Library    /absolute/path/JavaLibrary.java # 绝对路径
+			Library    relative/path/PythonDirLib/    possible    arguments # 导入目录实现的库已 “/”结尾，{相对路径}
+			Library    ${RESOURCES}/Example.class
+
+		* 一个限制，如果用python去实现库，那么这个库的模块名称，和 class 类名称必须一样
+2.4.3 Setting custom name to test library # 设置自定义名称给library
+pass
+
+2.4.4 Standard libraries
+	* 标准库是跟着RF一起被安装的，其中最特殊的是Build-in 库，他是自动导入的，其他的不用在安装了，但是需要导入
+
+	Normal Stadard Library
+		* BuiltIn
+		* Collections
+		* DateTime
+		* Dialog
+		* OperatingSystem
+		* Process
+		* Screenshot
+		* String
+		* Telnet
+		* XML
+	Remote Library
+	pass
+
+2.4.5 External libraries
+	* 需要自己安装的第三方库
+	* 安装第三方库阅读一下相应库的安装说明，注意将其依赖的库也安装上
+
+2.5 Variables
+2.5.1 Introduction
+	* 一个正常的关键字不能让变量指定，但是 可以通过 Run Keywords arg 这个关键自达到将关键字赋值给变量的效果 
+	* 变量数据结构 ${} #标准变量, @{} #List, &{} #字典,%{ENV_VAR} #环境变量
+
+2.5.2 Variable Types
+	* 大小写敏感，空格和下划线忽略
+	* 建议全局变量使用大写(eg. ${PATH}
+
+	Scalar variables
+	* 当一个Cell内有唯一一个变量的时候，这个变量就指向他的实际存储，当有多个的时候会将其对象转化为字符串和其他对象连接起来
+	* 将对象转化为字符串调用了 java toString(),python __str__()方法
+
+	List variables
+
+		Using list variables with other data:也会表现出粘合成一个字符串的效果
+		Accessing individual list items
+			*** Test Cases ***
+			List Variable Item
+			    Login    @{USER}[0]    @{USER}[1] # 使用索引
+			    Title Should Be    Welcome @{USER}[0]! # 和其他数据一起时被转化成字符串
+
+			Negative Index
+			    Log    @{LIST}[-1] # 负数索引
+
+			Index As Variable
+			    Log    @{LIST}[${INDEX}] # 索引值支持使用变量
+
+		Using list variables with settings
+			*** Settings ***
+			Library         ExampleLibrary      @{LIB ARGS}    # This works
+			Library         ${LIBRARY}          @{LIB ARGS}    # This works
+			Library         @{NAME AND ARGS}                   # This does not work
+			Suite Setup     Some Keyword        @{KW ARGS}     # This works
+			Suite Setup     ${KEYWORD}          @{KW ARGS}     # This works
+			Suite Setup     @{KEYWORD}                         # This does not work
+			Default Tags    @{TAGS}                            # This works
+
+	Dictionary variables
+		&{USER} = {'naem':'robot', 'password':'secret'}
+		*** Test Cases ***
+		Constants
+		    Login    name=robot    password=secret
+		等价于
+		Dict Variable
+		    Login    &{USER}
+		Using dictionary variables with other data
+		Accessing individual dictionary items
+			*** Test Cases ***
+			Dict Variable Item
+			    Login    &{USER}[name]    &{USER}[password] # 访问值
+			    Title Should Be    Welcome &{USER}[name]! # 和其他数据一起被转为字符串
+
+			Key As Variable
+			    Log Many    &{DICT}[${KEY}]    &{DICT}[${42}] # 支持变量形式访问
+
+			Attribute Access
+			    Login    ${USER.name}    ${USER.password} # 如果key是字符串可以使用属性访问格式 ${USER.name}
+			    Title Should Be    Welcome ${USER.name}!
+		Using dictionary variables with settings
+			*** Settings ***
+			Library        ExampleLibrary    &{LIB ARGS}
+			Suite Setup    Some Keyword      &{KW ARGS}     named=arg
+
+	Evirnonment variable
+		格式： %{ENV_VAR_NAME}，其值仅限于字符串
+
+2.5.3 Creating variables
+
+Variable table
+	* 我们可以在testCase File 和 Resource File中见到 Variable table(最为常见)
+	* 如果由缺点的话就是，变量值永远是字符串类型，不过这个可以通过 Variable File解决
+	Creating scalar variables
+		* 将字符串赋值给变量，第一列为变量名，第二列为值，如果第二列为空则将一个空字符串赋值给变量
+		  当然，也可以将一个已经赋值的变量放在第二列
+				*** Variables ***
+				${NAME}         Robot Framework
+				${VERSION}      2.0
+				${ROBOT}        ${NAME} ${VERSION}
+		* 也可以加个 “=” 增加可读性
+				*** Variables ***
+				${NAME} =       Robot Framework
+				${VERSION} =    2.0
+		* 对于value是一个长文本的问题，首先默认的连接是space,我们可以把多个列的值连接起来，如果是多行我们可以通过修改连接符实现
+				*** Variables ***
+				${EXAMPLE}      This value is joined    together with a space
+				${MULTILINE}    SEPARATOR=\n    First line
+				...             Second line     Third line
+	
+	Creating list variables
+		eg.
+		*** Variables ***
+		@{NAMES}        Matti       Teppo
+		@{NAMES2}       @{NAMES}    Seppo
+		@{NOTHING}
+		@{MANY}         one         two      three      four
+		...             five        six      seven
+
+	Creating dictionary variables
+		eg.
+		*** Variables ***
+		&{USER 1}       name=Matti    address=xxx         phone=123
+		&{USER 2}       name=Teppo    address=yyy         phone=456
+		&{MANY}         first=1       second=${2}         ${3}=third
+		&{EVEN MORE}    &{MANY}       first=override      empty=
+		...             =empty        key\=here=value #使用等号要转义
+
+		*  ${USER 1.name}  等价于 &{USER 1}[name]
+		*  dictionary 的键值是有序的，和他们创建时的顺序一致
+			eg. @{NANY} 包含 ['first', 'second', 3]
+
+	Variable File
+		见 Resource and variable files
+
+	Setting variables in command line
+		pass
+
+	Assigning scalar variables
+		* 将关键字Return的值赋值给变量
+			*** Test Cases ***
+			Returning
+			    ${x} =    Get X    an argument
+			    Log    We got ${x}!
+		* 将关键字Return的值(LIST/DIC)赋值给标量变量也是可以的
+			*** Test Cases ***
+			Example
+			    ${list} =    Create List    first    second    third
+			    Length Should Be    ${list}    3
+			    Log Many    @{list}
+	Assigning list variables
+		* eg.
+			*** Test Cases ***
+			Example
+			    @{list} =    Create List    first    second    third
+			    Length Should Be    ${list}    3
+			    Log Many    @{list}
+
+			*** Test Cases ***
+			Example
+			    ${list} =    Create List    first    second    third
+			    Length Should Be    ${list}    3
+			    Log Many    @{list}
+			 ********************************************************
+			 @{list} =    Create List    first    second    third
+			 ${list} =    Create List    first    second    third
+			 *********************************************************
+			 以上两种无本质上的区别
+
+	Assigning dictionary variables
+		* eg.
+		*** Test Cases ***
+		Example
+		    &{dict} =    Create Dictionary    first=1    second=${2}    ${3}=third
+		    Length Should Be    ${dict}    3
+		    Do Something    &{dict}
+		    Log    ${dict.first}
+
+		*Because all Robot Framework variables are stored in the same namespace, it would also be possible to assign a dictionary into a scalar variable and use it later as a dictionary when needed. There are, however, some actual benefits in creating a dictionary variable explicitly. First of all, Robot Framework verifies that the returned value is a dictionary or dictionary-like similarly as it verifies that list variables can only get a list-like value.
+
+		*A bigger benefit is that the value is converted into a special dictionary that it uses also when creating dictionary variables in the variable table. Values in these dictionaries can be accessed using attribute access like ${dict.first} in the above example. These dictionaries are also ordered, but if the original(原始的) dictionary was not ordered, the resulting order is arbitrary(随意的).
+
+	Assigning multiple variables(返回多个值，用不同类型变量接收)
+		eg.
+		*** Test Cases ***
+		Assign Multiple
+		    ${a}    ${b}    ${c} =    Get Three # 分别用三个标量变量接收
+		    ${first}    @{rest} =    Get Three # 第一个用标量变量接收，剩下的用列表接收
+		    @{before}    ${last} =    Get Three # 最后一个用标量变量接收，前面的用列表接收
+		    ${begin}    @{middle}    ${end} =    Get Three # 第一个和最后一个用标量变量接收，中间的用列表变量接收
+
+	Using Set Test/Suite/Global Variable keywords
+		* BuiltIn Library Keyword
+		* 如果该变量已经存在即覆盖掉存在的变量，如果不存在就创建了一个新的变量
+		* Set Test Variable：在当前的testcase内任意位置使用，他会在当前的case里改变变量的值，但是不会影响其他case内的变量
+		* Set Suite Variable:这个关键字和在Variable table或variableFile设置等效，当前suite均会影响到，但是其他suite /以及当前
+		...suite 的子suite都不可见
+		* Set Global Variable:小心使用，一处改变处处改变
+2.5.4 Built-in variables
+
+	Operating-system variables
+		${CURDIR}		当前测试文件所在的绝对路径，大小写敏感
+		${TEMPDIR} 		零时文件的绝对路径
+		${EXECDIR}		测试开始执行文件的绝对路径
+		${/}			系统目录的分隔符. / in UNIX-like systems and \ in Windows.
+		${:}			The system path element separator. : in UNIX-like systems and ; in Windows.
+		${\n}			换行标识符. \n in UNIX-like systems and \r\n in Windows. New in version 2.7.5.
+
+	Number variables
+
+		*** Test Cases ***
+		Example 1A
+		    Connect    example.com    80       # Connect gets two strings as arguments
+
+		Example 1B
+		    Connect    example.com    ${80}    # Connect gets a string and an integer
+
+		Example 2
+		    Do X    ${3.14}    ${-1e-4}        # Do X gets floating point numbers 3.14 and -0.0001
+
+	Boolean and None/null variables
+		*** Test Cases ***
+		Boolean
+		    Set Status    ${true}               # Set Status gets Boolean true as an argument
+		    Create Y    something   ${false}    # Create Y gets a string and Boolean false
+
+		None
+		    Do XYZ    ${None}                   # Do XYZ gets Python None as an argument
+
+		* 对大小写不敏感的(case-insensitive),因此 ${True} == ${true} 
+
+	Space and empty variables
+		*** Test Cases ***
+		One Space
+		    Should Be Equal    ${SPACE}          \ \
+
+		Four Spaces
+		    Should Be Equal    ${SPACE * 4}      \ \ \ \ \
+
+		Ten Spaces
+		    Should Be Equal    ${SPACE * 10}     \ \ \ \ \ \ \ \ \ \ \
+
+		Quoted Space
+		    Should Be Equal    "${SPACE}"        " "
+
+		Quoted Spaces
+		    Should Be Equal    "${SPACE * 2}"    " \ "
+
+		Empty
+		    Should Be Equal    ${EMPTY}          \
+
+		## 以下是EMPTY在list 和 dic 中使用
+		*** Test Cases ***
+		Template
+		    [Template]    Some keyword
+		    @{EMPTY}
+
+		Override
+		    Set Global Variable    @{LIST}    @{EMPTY}
+		    Set Suite Variable     &{DICT}    &{EMPTY}
+
+	Automatic variables
+	pass
+
+2.5.5 Variable priorities and scopes
+Variable priorities  # 变量的优先级
+
+
+2.6 Create User Keywords
+
+Keyword table 就是用例存放高阶关键字的，通过组合已经存在的关键字！写法和写测试用例类似
+2.6.1 User Keywords syntax
+Basic Syntax
+	eg.
+	*** Keywords ***
+	Open Login Page
+	    Open Browser    http://host/login.html
+	    Title Should Be    Login Page
+
+	Title Should Start With
+	    [Arguments]    ${expected}
+	    ${title} =    Get Title
+	    Should Start With    ${title}    ${expected}
+
+	* 用户关键字可以在test case file,resource file,test suite init file里创建！
+
+Settings in the Keyword table
+	eg.
+	[Documentation]
+	Used for setting a user keyword documentation.
+	[Tags]
+	Sets tags for the keyword.
+	[Arguments]
+	Specifies user keyword arguments.
+	[Return]
+	Specifies user keyword return values.
+	[Teardown]
+	Specify user keyword teardown.
+	[Timeout]
+	Sets the possible user keyword timeout. Timeouts are discussed in a section of their own.
+
+2.6.2 User Keyword name and documentation
+	* keyword name 要具有描述性质
+	* [Documentation]的第一行将输出到log日志当中
+	* 关键过期或无效了可以对他进行标记，当该关键字被执行时会有相应的提示 *DEPRECATED*
+
+2.6.3 User Keyword tags
+	* 他的tag名称不会受force tags,default tags的影响
+	* 除了利用[Tags]设置外，也可以通过在[Documentation]的最后一行，Tags:  a, b, c 这样的格式设置
+
+2.6.4 User Keyword arguments
+Positional arguments
+	eg.
+	*** Keywords ***
+	One Argument
+	    [Arguments]    ${arg_name}
+	    Log    Got argument ${arg_name}
+
+	Three Arguments
+	    [Arguments]    ${arg1}    ${arg2}    ${arg3}
+	    Log    1st argument: ${arg1}
+	    Log    2nd argument: ${arg2}
+	    Log    3rd argument: ${arg3} 
+
+Default values with user keywords
+	* 必须放到positional arguments 后边
+	* “=”赋值具有空格敏感的特性，前面有空格不被允许，后面有空格会被当作默认值的一部分
+		eg.
+		*** Keywords ***
+		Two Arguments With Defaults
+		    [Arguments]    ${arg1}=default 1    ${arg2}=${VARIABLE}
+		    [Documentation]    This keyword takes 0-2 arguments
+		    Log    1st argument ${arg1}
+		    Log    2nd argument ${arg2}
+
+		*** Test Cases ***
+		Example
+		    Two Arguments With Defaults    arg2=new value # 调用时可以将{}去掉
+
+Varargs with user keywords # 可变参数
+	* 类似Python可变参数语法，注意默认参数！如果调用函数时要传入可变长度参数，默认参数就必须手动赋值了
+
+Kwargs with user keywords # 字典类型参数
+	* 类似Python语法，由上传多个key-value数据时，默认参数看以不上传
+
+2.6.5 Embedding arguments into keyword name # 把一个参数买到关键字的名称里边
+	* 这种用法的好处是使得关键字的使用更加生活化，更加接近于一个测试用例
+
+Basic Syntax
+PASS # 嵌入式关键字语法有点晦涩，暂时跳过了
+
+
+2.6.6 User Keyword Return Values
+	* 通过[Return] \ Built-In关键字Return From Keyword & Return From Keyword If 实现
+
+	Using [Return] Settings
+			eg.
+			*** Test Cases ***
+			Multiple Values
+			    ${a}    ${b}    ${c} =    Return Three Values # 分别用三个变量接收
+			    @{list} =    Return Three Values # 用一个List接收
+			    ${scalar}    @{rest} =    Return Three Values # 用普通变量和列表接收
+
+			*** Keywords ***
+			Return Three Values
+			    [Return]    foo    bar    zap
+
+	Using Special Keywords to Return
+		eg.
+		*** Test Cases ***
+		One Return Value
+		    ${ret} =    Return One Value  argument
+		    Some Keyword    ${ret}
+
+		Advanced
+		    @{list} =    Create List    foo    baz
+		    ${index} =    Find Index    baz    @{list}
+		    Should Be Equal    ${index}    ${1}
+		    ${index} =    Find Index    non existing    @{list}
+		    Should Be Equal    ${index}    ${-1}
+
+		*** Keywords ***
+		Return One Value
+		    [Arguments]    ${arg}
+		    Do Something    ${arg}
+		    ${value} =    Get Some Value
+		    Return From Keyword    ${value}
+		    Fail    This is not executed
+
+		Find Index
+		    [Arguments]    ${element}    @{items}
+		    ${index} =    Set Variable    ${0}
+		    :FOR    ${item}    IN    @{items}
+		    \    Return From Keyword If    '${item}' == '${element}'    ${index}
+		    \    ${index} =    Set Variable    ${index + 1}
+		    Return From Keyword    ${-1}    # Could also use [Return]
+
+2.6.7 User Keyword Teardown
+	* 用户关键字有一个 [Teardown]设置
+	* 该关键字执行不论成功失败都会执行 teardown 里的设置
+
+2.7 Resource and Variable files
+	* Resource file可以帮助我们实现变量的分享
+	* Variable file可以让我们快速导入熟悉的变量，尤其是使用.py
+
+2.7.1 Resource Files
+
+	Taking resource files into use
+		* 要使用resource file内的数据，通过 *** Settings ***表 Resource  导入resource file
+		
