@@ -763,7 +763,38 @@ PASS # 嵌入式关键字语法有点晦涩，暂时跳过了
 			* 方便知道创建的变量是什么数据结构，可以使用 LIST__XXXX,DICT__XXXX这样的前缀在.py文件里，但是最后真实的文件名不会包含LIST__,DICT__的前缀！且这样会让RF真实的以@{} or &{} 数据类型存储
 
 		Using objects as values
-			* 
+			* Python中变量指向一个对象，该变量被导入RF后，RF也可以拿到该对象，并可以访问其属性和方法
+				.py文件
+				class Rootbula:
+				    def __init__(self, name):
+				        self.name = name
+
+				    def get_phone(self):
+				    	return '18476638379'
+				    	
+				OBJ1 = Rootbula('John')
+
+				RF文件
+				*** Test Cases ***
+				Get var file data
+				    Log     ${OBJ1.name}  # John
+				    Log     ${OBJ1.get_phone()} # 18476638379
+
+		Creating variables dynamically
+			* 因为变量文件是使用程序语言实现的，所以可以有动态逻辑在设置变量的时候
+			* eg. 以下实例变量都是可动态变化的
+					import os
+					import random
+					import time
+
+					PID = os.getpid()                # 获取当前进程号码 
+					RANDOM_INT = random.randint(0, 10)  # 获取一个随机数
+					CURRENT_TIME = time.asctime()       # 获取当前时间 
+					if time.localtime()[3] > 12:	# 使用条件分支给变量赋值
+					    AFTERNOON = True
+					else:
+					    AFTERNOON = False
+
 
 
 
