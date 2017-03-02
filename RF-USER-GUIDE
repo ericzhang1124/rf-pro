@@ -679,4 +679,92 @@ PASS # 嵌入式关键字语法有点晦涩，暂时跳过了
 
 	Taking resource files into use
 		* 要使用resource file内的数据，通过 *** Settings ***表 Resource  导入resource file
-		
+		* 同样可以使用resource file内的从python库导入的关键字和变量
+
+	Resource file Structure
+		* 不包含Test Case Tables
+		* Settings包含( (Library, Resource, Variables) and Documentation.)
+		* Variable table + Keyword table
+		* 导入的文件含有含有相同的关键字需要在关键字之前加上文件名 eg.fileName.Keyword
+		* 导入的变量有相同的变量名则使用第一个被导入的
+
+	Documenting resource files
+		* 支持为Resource文件设置一个Doc
+
+	Example Resource File
+		eg.
+			*** Settings ***
+			Documentation     An example resource file
+			Library           Selenium2Library
+			Resource          ${RESOURCES}/common.robot
+
+			*** Variables ***
+			${HOST}           localhost:7272
+			${LOGIN URL}      http://${HOST}/
+			${WELCOME URL}    http://${HOST}/welcome.html
+			${BROWSER}        Firefox
+
+			*** Keywords ***
+			Open Login Page
+			    [Documentation]    Opens browser to login page
+			    Open Browser    ${LOGIN URL}    ${BROWSER}
+			    Title Should Be    Login Page
+
+			Input Name
+			    [Arguments]    ${name}
+			    Input Text    username_field    ${name}
+
+			Input Password
+			    [Arguments]    ${password}
+			    Input Text    password_field    ${password}
+
+2.7.2 Variable files
+	* variable files allow creating them dynamically and their variables can contain any objects.
+		- 变量文件允许动态创建变量 且 变量可包含任意对象
+	* 变量文件通常使用.py实现
+	* 两种创建变量文件的方法
+		- 1.直接创建
+		- 2.用特殊的方法 get_variables (or getVariables) 创建
+
+	Taking variable files into use
+		* Setting table（方式1）
+			- 在设置表里导入变量文件，如果不写绝对路径会先在当前目录找，然后到python模块搜索路径里边找
+			- 如果导入的文件需要参数，可以将参数写到文件后点的单元格
+			- eg.
+				*** Settings ***
+				Variables    myvariables.py
+				Variables    ../data/variables.py
+				Variables    ${RESOURCES}/common.py 
+				Variables    taking_arguments.py    arg1    ${ARG2}  # 带参数的变量文件
+
+			- 如果多个变量文件有同名的变量，则最早导入的那个会被使用
+			- 变量表和命令行里定义的变量将覆盖变量文件里的变量
+
+		* Command Line (方式2)
+			-  --variablefile
+					--variablefile myvariables.py
+					--variablefile path/variables.py
+					--variablefile /absolute/path/common.py
+					--variablefile taking_arguments.py:arg1:arg2
+			pass
+
+	Creating variables directly # 直接创建
+
+		Basic syntax
+			* python文件当中的全局变量将被RF获取，不包括变量名前由下划线的(_XXXX)
+					VARIABLE = "An example string"
+					ANOTHER_VARIABLE = "This is pretty easy!"
+					INTEGER = 42
+					STRINGS = ["one", "two", "kolme", "four"]
+					NUMBERS = [1, INTEGER, 3.14]
+					MAPPING = {"one": 1, "two": 2, "three": 3}
+			* 如上边这个文件，这些变量都可以当标量变量使用${}，list和dict也都可以当作列表变量使用(当然dict在被当作列表变量时只包含key)@{}, dict变量可以作为字典变量使用&{}
+
+			* 方便知道创建的变量是什么数据结构，可以使用 LIST__XXXX,DICT__XXXX这样的前缀在.py文件里，但是最后真实的文件名不会包含LIST__,DICT__的前缀！且这样会让RF真实的以@{} or &{} 数据类型存储
+
+		Using objects as values
+			* 
+
+
+
+
