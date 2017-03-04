@@ -795,6 +795,254 @@ PASS # 嵌入式关键字语法有点晦涩，暂时跳过了
 					else:
 					    AFTERNOON = False
 
+		Selecting which variables to include
+			* 从一个.py导入变量，可以通过在.py文件里__all__=[arg1, arg2, ...]这一个特殊的变量指定哪些数据将被导入，
+			其他的列表外数据将不会被导入
+
+	Getting variables from a special function
+		* .py实现get_variables | getVariables方法，可被RF调用且预计返回一个python的dictionary，变量名作为key，变量的值就作为值
+		* 被创建的变量可以是${} @{} &{} 
+		* 同样也可以使用 LIST__, DICT__ 前缀
+		* 该方法也可以有参数
+			eg.
+				variables1 = {'scalar': 'Scalar variable',
+				              'LIST__list': ['List','variable']}
+				variables2 = {'scalar' : 'Some other value',
+				              'LIST__list': ['Some','other','value'],
+				              'extra': 'variables1 does not have this at all'}
+
+				def get_variables(arg):
+				    if arg == 'one':
+				        return variables1
+				    else:
+				        return variables2
+
+	Implementing variable file as Python or Java class # 用类文件实现变量文件
+		* 由于变量文件都是由系统文件路径导入的，者给类的导入带来一定限制
+			- Python的类名必须和模块名称一模一样
+		* RF框架会自动创建一个不带参数的实例对象（导入的时候发生），变量将会通过这个实例获取到	
+			# coding:utf-8
+
+			class StaticPythonExample(object):
+				"""docstring for StaticPythonExample"""
+
+				variable = 'valuelala'
+				LIST__list = [4,5,6]
+				_not_variable = 'starts with an underscore' # 无法导成功导入，私有属性不能直接访问
+
+				def __init__(self):
+					self.anothervar = 'another variable' # 可以成功导入
+					self.anothername = 'HolyWood' # 可以成功导入
+			>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+2.8 Advanced features
+
+2.8.1 Handing Keywords with same names # 处理关键字同名的问题
+	* 概念
+		LibraryKeywords: 来源于标准库和扩展库
+		UserKeywords: 来源于当前文件下和resource file下被用户创建的
+ 	
+ 	Key word scopes
+ 		* 当使用了一个关键字，而这个关键字在几个地方定义了，RF就会根据其优先级决定指向哪一个
+ 			-1. 在当前文件创建的用户关键字拥有最高的优先级
+ 			-2. 导入resource file内的关键字拥有第二优先级
+ 			-3. 在扩展库中的关键字如果和标准库中的关键字重复了就会报警
+ 			-4. 标准库里的关键字优先级最低
+
+ 	Specifying a keyword # 明确指定关键字
+ 		* ResourceFileName.Keyword
+ 		* Library.Keyword
+
+ 	Specifying explicit priority between libraries and resources # 指定库和资源文件的优先级
+ 		* 使用Set Library Search Order 这个关键字设置
+ 		* 详细内容见此关键字 at BUILTIN Library
+
+ 2.8.2 Timeouts
+ 	* 可以对测试用例和UserKeywords设置超时
+
+ 	Test Case Timeout
+ 		* 通过Test Timeout设置，在Settings表里  - 对文件里的所有test cases 生效
+ 		* 通过[Timeout] 在测试用例表里 - 只对当前的测试用例生效，且会覆盖Settings里的超时设置
+ 		* [Timeout] 后不添加任何参数 或 添加一个None参数，意思是当前case无超时设置，这个可以将Settings的默认设置覆盖掉
+ 		* 时间格式可以是“2 minutes” 或 “120” 或 “1 min 30 s”
+ 		* 超时时间小于1s不建议使用该设置
+ 		* 如果超时的话会有一个默认的错误信息输出，用户也可以定制该信息，通过在timeouts后添加错误信息，该信息支持多行设置，无论是超时的值还是错误信息都支持变量
+ 		* 超时的测试用例依然会执行teardown的内容，因为一般这里边有重要的清理行为！如果非要停止teardown也是可能的，通过user keyword timeouts实现
+ 				Example:
+						*** Settings ***
+						Test Timeout       1 minutes
+
+						*** Test Cases ***
+						Default Timeout
+						    [Documentation]     默认使用 Settings 表里的设置
+						    Some Keyword    argument
+
+						Override
+						    [Documentation]     覆盖掉 Settings 里的默认超时设置
+						    [Timeout]   10
+						    Some Keyword    argument
+
+						Custom Message  
+						    [Documentation]     设置用户超时的错误信息
+						    [Timeout]   1 min 30 s      这是我自己的超时错误信息，当超时会被打印出来的
+						    Some Keyword    argument
+
+						Variables
+						    [Documentation]     时间的长度和错误信息都允许包含变量
+						    [Timeout]       ${Timeout}
+						    Some Keyword    argument
+
+						No Timeout
+						    [Documentation]     设置当前测试用例没有超时
+						    [Timeout]       
+						    Some Keyword    argument
+
+						No Timeout 2
+						    [Documentation]     设置当前测试用例没有超时
+						    [Timeout]       NONE
+						    Some Keyword    argument
+	User keyword timeout
+		* 在关键字TABLE里设置[Timeout]
+		* 用户关键字里的Timeout对teardown也生效，一旦超时teardown也将不会执行，这一点与Test Case Timeout不同
+			Example:
+					*** Keywords ***
+					Timed Keyword
+					    [Documentation]    Set only the timeout value and not the custom message.
+					    [Timeout]    1 minute 42 seconds
+					    Do Something
+					    Do Something Else
+
+					Wrapper With Timeout
+					    [Arguments]    @{args}
+					    [Documentation]    This keyword is a wrapper that adds a timeout to another keyword.
+					    [Timeout]    2 minutes    Original Keyword didn't finish in 2 minutes # 用户错误信息
+					    Original Keyword    @{args}
+
+					Wrapper With Customizable Timeout
+					    [Arguments]    ${timeout}    @{args}
+					    [Documentation]    Same as the above but timeout given as an argument.
+					    [Timeout]    ${timeout}
+					    Original Keyword    @{args}	
+2.8.3 For Loops
+	Normal For Loops
+		Example:
+				*** Settings ***
+				Library     varForRF.py # 封装了一个加法方法meth_of_add给Example 3使用
+
+				*** Variables ***
+				${last}     last
+				@{girlfriend}   Emmy    Sara    Blanda # Example 3 使用
+				${count}    ${1} # Example 3使用
+
+				*** Test Cases ***
+				Example 1
+				    :FOR    ${var}  IN      cat     dog
+				    \       Log     ${var}
+				    \       Log     another keyword
+				    Log     for loop end
+
+				Example 2
+				    :FOR    ${var}    IN    one    two
+				    ...     ${3}    four    ${last}
+				    \    Log    ${var}
+
+				Example 3
+				    :FOR    ${girl}     IN      @{girlfriend}
+				    \       Log     ${girl} is my ${count} girlfriend
+				    \       ${count}=   meth_of_add   ${count}  ${1}
+
+	Nested for loops # 嵌套For循环
+		* 不可以直接实现，但是可以通过一个含有for循环的关键字放入For循环以实现--个人觉得好难用，还是直接用python实现较好
+
+	Using several loop variables 
+		Example：
+			*** Test Cases ***
+			Three loop variables
+			    :FOR    ${index}    ${english}    ${finnish}    IN
+			    ...     1           cat           kissa
+			    ...     2           dog           koira
+			    ...     3           horse         hevonen
+			    \    Add to dictionary    ${english}    ${finnish}    ${index}
+			    :FOR    ${name}    ${id}    IN    @{EMPLOYERS}
+			    \    Create    ${name}    ${id}
+
+	For-in-range loop # 可以指定循环执行的次数
+		Example：
+				*** Test Cases ***
+				Only upper limit
+				    [Documentation]    Loops over values from 0 to 9  # 最简单的用法，指定循环次数的上限
+				    :FOR    ${index}    IN RANGE    10
+				    \    Log    ${index}
+
+				Start and end
+				    [Documentation]  Loops over values from 1 to 10  # 指定循环开始和结束
+				    :FOR    ${index}    IN RANGE    1    11
+				    \    Log    ${index}
+
+				Also step given
+				    [Documentation]  Loops over values 5, 15, and 25 # 指定循环的开始、结束和步距
+				    :FOR    ${index}    IN RANGE    5    26    10
+				    \    Log    ${index}
+
+				Negative step
+				    [Documentation]  Loops over values 13, 3, and -7 # 逆序步距
+				    :FOR    ${index}    IN RANGE    13    -13    -10
+				    \    Log    ${index}
+
+				Arithmetics
+				    [Documentation]  Arithmetics with variable
+				    :FOR    ${index}    IN RANGE    ${var}+1
+				    \    Log    ${index}
+
+				Float parameters
+				    [Documentation]  Loops over values 3.14, 4.34, and 5.54  # 支持小数
+				    :FOR    ${index}    IN RANGE    3.14    6.09    1.2
+				    \    Log    ${index}
+
+	For-in-enumerate loop #  枚举的循环方式
+		Example:
+			*** Variables ***
+			@{myschool}     Xinghuo     xidian      yanan
+
+			*** Test Cases ***	 # 方式一
+			Output my school
+			    [Documentation]     练习使用一种带有索引的For循环
+			    :FOR    ${index}    ${schoolname}       IN ENUMERATE    @{myschool}
+			    \       Log     ${index}:${schoolname}
+
+			*** Test Case ***   # 方式二
+			For-in-enumerate with two values per iteration
+			    :FOR    ${index}    ${english}    ${finnish}    IN ENUMERATE
+			    ...    cat      kissa
+			    ...    dog      koira
+			    ...    horse    hevonen
+			    \    Add to dictionary    ${english}    ${finnish}    ${index}
+
+	For-in-zip loop # 
+		* zip()方法是python的一个内置方法，该方法将多个列表打包成一个列表，按顺序取出每个列表的元素组装为一个元组，然后这些元组在组成一个列表返回
+			name = ['zhangsan', 'lisi', 'wangwu', 'zhaoliu']
+			score = [67, 78, 77,88]
+			zip(name,score)返回一个列表[('zhangsan',67), ('lisi', 78), ('wangwu', 77), ('zhaoliu', 88)]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
