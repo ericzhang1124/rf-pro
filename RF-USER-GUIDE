@@ -1021,29 +1021,45 @@ PASS # 嵌入式关键字语法有点晦涩，暂时跳过了
 
 	For-in-zip loop # 
 		* zip()方法是python的一个内置方法，该方法将多个列表打包成一个列表，按顺序取出每个列表的元素组装为一个元组，然后这些元组在组成一个列表返回
-			name = ['zhangsan', 'lisi', 'wangwu', 'zhaoliu']
-			score = [67, 78, 77,88]
-			zip(name,score)返回一个列表[('zhangsan',67), ('lisi', 78), ('wangwu', 77), ('zhaoliu', 88)]
+			实例:
+				name = ['zhangsan', 'lisi', 'wangwu', 'zhaoliu']
+				score = [67, 78, 77,88]
+				zip(name,score)返回一个列表[('zhangsan',67), ('lisi', 78), ('wangwu', 77), ('zhaoliu', 88)]
 
+		* RF 中使用注意IN ZIP后的列表变量必须使用${}, 而不能使用@{}
+				*** Variables ***
+				@{myschool}     Xinghuo     xidian      yanan
+				@{level}        小学         中学           大学
+				*** Test Cases ***
+				Output my school 2
+				    [Documentation]     练习使用FOR ZIP
+				    :FOR    ${le}   ${sn}   IN ZIP  ${level}    ${myschool}  #注意该处变量使用的是${},而不是@{}
+				    \       Log     ${le}在${sn}读的
 
+	Exiting for loop  # 退出for循环
+		* 正常for循环是在执行完成或遇到异常退出才会结束，如果要想在这之前结束可以通过关键之 Exit For Loop | Exit For Loop If,他的作用好比Python里的break
+		* Exit For Loop | Exit For Loop If 只能在For Loop中使用，在外使用会报错
+			Example:
+				*** Test Cases ***
+				Exit Example
+				    ${text} =    Set Variable    ${EMPTY}
+				    :FOR    ${var}    IN    one    two
+				    \    Run Keyword If    '${var}' == 'two'    Exit For Loop  # 也可以写成 **Exit For Loop If 	'${var}' == 'two'**
+				    \    ${text} =    Set Variable    ${text}${var}
+				    Should Be Equal    ${text}    one
 
+	Continuing for loop # 退出当前循环进入下一次循环
+		* 关键字 Continue For Loop && Continue For Loop If， 同Python中的continue
 
+2.8.4   Conditional execution # 条件执行
+	
+	* 首先在Test Case 或 User Keyword当中不推荐使用各种条件逻辑，因为这会使得难以理解和维护，这部分工作应该放在Library里使用编程语言实现
+	* 但是有些时候这种逻辑控制是有用的，RF内没有真正的if/else结构语句，但是有几种方式来实现这种需求
+		-1.Run Keyword
+		-2.Run Keyword If  &  Run Keyword Unless
+		-3.Set Variable If
+		-4.还有几个关键字可以执行指定的关键字，当测试用例或测试套件执行失败或通过的时候
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+2.8.5   Parallel execution of keywords # 并行执行关键字
+	* 需在底层Library内实现
+	* 见OperatingSystem library库 ，Start Process and Read Process Output 关键字
