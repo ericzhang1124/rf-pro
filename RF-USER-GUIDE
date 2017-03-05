@@ -1063,3 +1063,174 @@ PASS # 嵌入式关键字语法有点晦涩，暂时跳过了
 2.8.5   Parallel execution of keywords # 并行执行关键字
 	* 需在底层Library内实现
 	* 见OperatingSystem library库 ，Start Process and Read Process Output 关键字
+
+3.Executing Test cases
+3.1 Basic Usage
+3.1.1 Starting test execution
+	Synopsis # 简介
+		robot [options] data_sources # 直接使用robot ， 之后可以添加目录执行目录里的所有case
+		python|jython|ipy -m robot [options] data_sources # 用python,可以再去找robot所在的目录了
+		python|jython|ipy path/to/robot/ [options] data_sources
+
+	Specifying test data to be executed # 指定执行测试数据
+		robot tests.robot # 执行suite file
+		robot path/to/my_tests/ # 执行目录
+		robot c:\robot\tests.robot # 绝对路径
+
+		robot my_tests.robot your_tests.robot 
+			# RF首先将使用my_tests和your_tests组装一个顶级suite(my_tests&your_tests),然后是
+			my_tests&your_tests.my_tests和my_tests&your_tests.your_tests
+
+			# 如上，这样的顶级suite的名称太长了，一般会通过给顶级suite指定一个名称如:
+			robot --name MyTopSuite my_tests.robot your_tests.robot
+			MyTopSuite.my_tests  和  MyTopSuite.	your_tests
+
+3.1.2   Using command line options
+	Using options
+		* 在robot脚本和test cases路径之间使用 OPTION
+			比如：
+			-1.	robot -L debug my_tests.robot  
+			-2.	robot --include smoke --variable HOST:10.0.0.42 path/to/tests/
+	
+	Shor and long options # 命令行选项中的长短命令
+		* --name 可以缩写为 -N
+		* 执行的时候可以使用缩写，但是对于start-up script建议使用全名，因为这样更容易理解
+		* long options对大小写不敏感,如--suitestatlevel 可以写为 --SuiteStatLevel,增加可读性
+	
+	Setting option values
+		* 很多的设置都会有一个值，比如:	:--include tag or -i tag. 
+		* 也可以如此 --include=tag
+		* 可以使用多次的option| --variable VAR1:value --variable VAR2:another
+		* 相同的变量名在此设置，只有最后一个生效
+
+	Disabling options accepting no values
+		PASS
+
+	Simple patterns # 简单的字符匹配
+		* "*" 通配符，可以匹配人资字符串包含空的字符串
+		* "?" 统配符，匹配单个任意字符
+			Example：
+				--test Example*     # Matches tests with name starting 'Example', case insensitively.
+				--include f??       # Matches tests with a tag that starts with 'f' or 'F' and is three characters long.
+	
+	Tag patterns
+		AND or & # 且
+		The whole pattern matches if all individual patterns match. AND and & are equivalent:
+
+		--include fooANDbar     # Matches tests containing tags 'foo' and 'bar'.
+		--exclude xx&yy&zz      # Matches tests containing tags 'xx', 'yy', and 'zz'.
+		>>>>>>>>>>>>>>>>>>---------分割线---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+		OR # 或
+		The whole pattern matches if any individual pattern matches:
+
+		--include fooORbar      # Matches tests containing either tag 'foo' or tag 'bar'.
+		--exclude xxORyyORzz    # Matches tests containing any of tags 'xx', 'yy', or 'zz'.
+		>>>>>>>>>>>>>>>>>>---------分割线---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+		NOT # 非
+		The whole pattern matches if the pattern on the left side matches but the one on the right side does not. If used multiple times, none of the patterns after the first NOT must not match:
+
+		--include fooNOTbar     # Matches tests containing tag 'foo' but not tag 'bar'. # 有foo而没有bar的case
+		--exclude xxNOTyyNOTzz  # Matches tests containing tag 'xx' but not tag 'yy' or tag 'zz'. # 有xx 而没有yy 或 zz tag的cases
+		Starting from Robot Framework 2.9 the pattern can also start with NOT in which case the pattern matches if the pattern after NOT does not match:
+
+		--include NOTfoo        # Matches tests not containing tag 'foo' # 除foo以外的cases全部执行
+		--include NOTfooANDbar  # Matches tests not containing tags 'foo' and 'bar' # 除foo 和 bar 以外的cases全部执行
+
+		>>>>>>>>>>>>>>>>>>---------分割线---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+		可以混合到一起使用[AND | OR | NOT]
+		--include xANDyORz      # Matches tests containing either tags 'x' and 'y', or tag 'z'.
+		--include xORyNOTz      # Matches tests containing either tag 'x' or 'y', but not tag 'z'.
+		--include xNOTyANDz     # Matches tests containing tag 'x', but not tags 'y' and 'z'.
+
+		>>>>>>>>>>>>>>>>>>---------分割线---------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+		操作符本身对大小写敏感，只能使用大写
+
+	ROBOT_OPTIONS and REBOT_OPTIONS environment variables
+	PASS
+
+3.1.3 Test results
+	Command line Output # 普通的控制台执行输出
+	Generated output files # 生成输出文件.xml report.html log.html
+	Return codes # 返回码
+		RC 			Explanation		
+		0			所有关键用例全部通过
+		1-249		关键用例执行失败的数量
+		250			250或更多的关键用例执行失败
+		251			帮助或版本信息打印输出
+		252			非法的测试套件或命令行参数错误
+		253			用户结束执行
+		255			内部错误
+		* Return code 的作用是当要设计执行失败去做什么的场景中可以使用
+
+	Errors and warnings during execution
+		* 在log文件查看
+
+3.1.4 Escaping complicated characters
+PASS
+
+3.1.5 Argument files
+	* 参数文件允许将所有或一些命令行选项和参数放到一个外部文件中，在那里它们将被读取。
+	* 在命令行这样引用 ， --argumentfile (-A)
+	* --ArgumentFile 也可以使用但是只能在3.0.2或更新的版本使用
+
+	Argument file syntax
+		* 参数文件里可以包含options和测试数据路径，每行一个option 或 测试数据资源
+		* 参数文件内可以包含任意字符而无需转义
+		* 每行的行首空格和行末空格都会被忽略
+		* 空行和(#)开头的行将被忽略掉
+			Example:
+			--doc This is an example (where "special characters" are ok!)
+			--metadata X:Value with spaces
+			--variable VAR:Hello, world!
+			# This is a comment
+			path/to/my/tests
+		* 可以通过以下三种方式给option赋值,都是一样的
+			Example:
+			--name An Example
+			--name=An Example
+			--name       An Example
+		* 如果文件中包含non-ASCII characters，则必须以UTF-8格式存储
+
+	Using argument files
+		* argument file可以单独使用，也可以和其他options一起使用
+		* argument feles里的options将被放置到所在的位置，也就是说file前的option会被file里的option覆盖,file后的option会覆盖file里的option
+			Example:
+			robot --argumentfile all_arguments.robot
+			robot --name Example --argumentfile other_options_and_paths.robot
+			robot --argumentfile default_options.txt --name Example my_tests.robot
+			robot -A first.txt -A second.txt -A third.txt tests.robot
+
+	Reading argument files from standard input
+		* STDIN : 特别的参数文件，可以使用指定的标准输入流代替file，这将很有用在使用脚本生成参数的时候
+			Example:
+			generate_arguments.sh | robot --argumentfile STDIN
+			generate_arguments.sh | robot --name Example --argumentfile STDIN tests.robot
+
+3.1.6   Getting help and version information
+	$ robot --version
+	Robot Framework 3.0 (Jython 2.7.0 on java1.7.0_45)
+
+	C:\>rebot --version
+	Rebot 3.0 (Python 2.7.10 on win32)
+
+3.1.7   Creating start-up scripts # 启动脚本后续使用再查看使用方法
+	* 在持续化集成和自动化执行测试用例中，这样的启动脚本很有用
+	* 可以使用unix下的bash，win下的批文件脚本 或 python程序编写启动脚本
+		Example:
+		# 使用不同的浏览器执行一个web测试, 然后将结果结合起来
+		#!/bin/bash
+		robot --variable BROWSER:Firefox --name Firefox --log none --report none --output out/fx.xml login
+		robot --variable BROWSER:IE --name IE --log none --report none --output out/ie.xml login
+		rebot --name Login --outputdir out --output login.xml out/fx.xml out/ie.xml
+
+3.1.8   Debugging problems
+
+3.2   Test execution
+	* 本部分主要讲，1.测试套件如何从解析的测试数据创建的；2.如何遇到执行失败继续执行；3.如何优雅停止测试执行
+
+3.2.1   Execution flow
+	Executed suites and tests
+	
