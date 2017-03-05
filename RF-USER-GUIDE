@@ -1233,4 +1233,95 @@ PASS
 
 3.2.1   Execution flow
 	Executed suites and tests
+		* 可以指定执行特定的case |python -m robot --test Example_1 test_for_loop.robot 
+			-|  --test, --suite, --include and --exclude
+
+	Setups and teardowns
+		* Setup 和 teardowns可以在测试套件、测试用例、用户关键字三个级别使用
+		* Keyword teardown #关键字只有teardown，
+
+	Execution order
+		* 测试套件中的用例执行是按照定义的顺序进行的
+		* 测试套件中还有其他测试套件，他们的顺序呢是根据套件名称的字母顺序排序的
+		* 在命令行中，测试套件或目录的执行中是按照命令行要求的顺序执行的
+		* 可以通过给特使套件和目录前增加“01__”前缀,指定其执行的顺序
+			01__my_suite.html -> My Suite
+			02__another_suite.html -> Another Suite
+		* 可以通过argument对测试套件、目录的执行进行排序
+
+	Passing execution
+		* Pass Execution and Pass Execution If # 内置关键字
+
+3.2.2   Continue on failure
+	Run Keyword And Ignore Error and Run Keyword And Expect Error keywords
+		* Run Keyword And Ignore Error
+		* Run Keyword And Expect Error
+		# 以上的关键字可能使得测试用例更加复杂，以下的方法可能会更加有效
+
+	Special failures from keywords
+		* test Library可以通过except实现失败后的处理，详见 test library API chapter部分
+
+	Run Keyword And Continue On Failure keyword
+
+	Execution continues on teardowns automatically # teardowns内的关键字在case或suite执行失败也可正常执行
+
+	All top-level keywords are executed when tests have templates
+	# 所有高阶关键字将被执行（哪怕其中有失败的），在使用模板的时候
+
+3.2.3   Stopping test execution gracefully
+	* Press "Ctrl+C" 停止执行测试，双击将不会输出report和log
+
+	pass
+
+3.3   Post-processing outputs
+
+跳过很多内容
+...
+
+4. Extending Robot Framework
+ 	4.1 Create test libraries
+ 	4.2 Remove library interface
+ 	4.3 Listener interface
+ 	4.4 Extending teh Robot Framework JAR
+
+4.1 Create test libraries
+ 	* 创建自己的库是很简单明了的
+
+4.1.1 Introduction 
+
+ 	* Different test library APIs 
+ 		Static API
+ 			# 最简单的是使用python的模块和类实现，可以传递参数，可以使用except输出错误信息，可以返回值
+ 		Dynamic API
+ 			# 动态库是类s,实现一个特殊方法获取关键字的名称，另外一个特殊方法执行关键字！关键字如何被执行将至执行时做出决定
+ 		Hybrid API
+ 			# 库也是类s实现的，使用一个方法说明实现了哪些关键字，且这些关键字可以直接被使用
+
+4.1.2   Creating test library class or module
+	# 库可以通过python的模块和类来实现
+
+	Test Library names
+		* 导入python文件，使用模块名称
+		* 导入一个python文件，内部是用类实现的，如果模块名称和类名称一样，RF将会舍弃掉类的名称
+		* 如果模块名称和类名称不一致，则在导入时需要将模块名称和类名称都写上，如mymodule.MyLib or parent.submodule.MyLib
+
+	Providing arguments to test libraries
+		* 使用类实现的库可以使用参数，这些参数可以放置到RF Settings表 内的Library库后边，传递给构造函数
+		* 使用模块创建的库就不能传递参数了，否则会报错的
+			# ** MyLibrary.py **
+			from example import Connection
+
+			class MyLibrary:
+
+			    def __init__(self, host, port=80):
+			        self._conn = Connection(host, int(port))
+
+			    def send_message(self, message):
+			        self._conn.send(message)
+
+			# RF调用关键字
+			*** Settings ***
+			Library    MyLibrary     10.0.0.1    8080
+
+	Test library scope
 	
