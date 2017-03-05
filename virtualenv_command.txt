@@ -1,0 +1,17 @@
+1. pip 使用
+	pip install SomePackage
+	pip show --files SomePackage
+	pip uninstall SomePackage
+	pip freeze
+
+2. virtualenv
+	pip install virtualenv
+	source activate # 进入虚拟环境
+	deactivate # 退出当前虚拟环境
+	virtualenv --no-site-packages --python=2.7 env
+		--no-site-packages:表示不包括系统全局的Python安装包，这样会更令环境更干净
+		--python=2.7:指定Python的版本未系统已经安装了的Python2.7
+		env:虚拟环境名称
+
+	rm -r venv:直接删除虚拟环境所在的文件夹venv就删除了我们创建的venv虚拟环境
+	pip install -r requirements.txt:安装requirements里的指定安装包
