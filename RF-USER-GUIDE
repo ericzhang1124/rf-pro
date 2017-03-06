@@ -1324,4 +1324,56 @@ PASS
 			Library    MyLibrary     10.0.0.1    8080
 
 	Test library scope
+		* 可以通过ROBOT_LIBRARY_SCOPE属性给类设置Scope
+		* 默认值是TEST CASE
+		* TEST SUITE
+		* GLOBAL
+			class ExampleLibrary:
+
+			    ROBOT_LIBRARY_SCOPE = 'TEST SUITE' #在此设置
+
+			    def __init__(self):
+			        self._counter = 0
+
+			    def count(self):
+			        self._counter += 1
+			        print self._counter
+
+			    def clear_counter(self):
+			        self._counter = 0
+	
+	Specifying library version
+		* 使用ROBOT_LIBRARY_VERSION 或 __version__属性
+
+	Specifying documentation format
+		* 使用 ROBOT_LIBRARY_DOC_FORMAT 设置说明文档的格式
+		* 支持的格式有ROBOT (default), HTML, TEXT (plain text), and reST
+		* 使用reST 需要安装docutils模块
+			#Example：
+			"""A library for *documentation format* demonstration purposes.
+
+			This documentation is created using reStructuredText__. Here is a link
+			to the only \`Keyword\`.
+
+			__ http://docutils.sourceforge.net
+			"""
+
+			ROBOT_LIBRARY_DOC_FORMAT = 'reST'
+
+			def keyword():
+			    """**Nothing** to see here. Not even in the table below.
+
+			    =======  =====  =====
+			    Table    here   has
+			    nothing  to     see.
+			    =======  =====  =====
+			    """
+			    pass 
+
+	Library acting as listener # 库作为监听器
+		* 使用 ROBOT_LIBRARY_LISTENER 设置一个接听器，其值是一个监听器实例
+		* 详见 Test Library as Listener
+
+4.1.3 Create static Keywords
+	What methods are considered keywords # 哪些方法将被认为是关键字
 	
